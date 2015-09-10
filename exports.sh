@@ -1,0 +1,9 @@
+export TANGO_HOST=bli911server.maxlab.lu.se:10000
+export XML_FILES_PATH=/home/blissadm/mikegu/mxcube-v3-Flask/app/main/src/HardwareObjects.xml/
+export PYTHONPATH=$PYTHONPATH:/home/blissadm/mikegu/mxcube-v3-Flask
+export PYTHONPATH=$PYTHONPATH:/home/blissadm/mikegu/mxcube-v3-Flask/venv/lib/python2.6/site-packages/
+export PYTHONPATH=$PYTHONPATH:/home/blissadm/mikegu/mxcube-v3-Flask/app/main/src/
+export PYTHONPATH=$PYTHONPATH:/home/blissadm/mikegu/mxcube-v3-Flask/app/main/src/HardwareObjects
+export PYTHONPATH=$PYTHONPATH:/home/blissadm/mikegu/mxcube-v3-Flask/app/main/src/HardwareRepository
+#export PYTHONPATH=$PYTHONPATH:/home/blissadm/Python/pydispatch
+export PYTHONPATH=$PYTHONPATH:/home/blissadm/Python/
