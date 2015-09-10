@@ -1,6 +1,0 @@
-<device class = "SpecMotor">
-  <username>Focus</username>
-  <specname>phix</specname>
-  <specversion>bli9113-spec:kappa</specversion>
-  <GUIstep>0.010</GUIstep>
-</device>
