@@ -52,7 +52,7 @@ var Sample = React.createClass({
   getInitialState: function () {
      // this.streamSubscribe()
       //TODO: the ajax call in streamsubscribe is asynch, so no url return in time for setting the eventsource, hardcoded here and moving on.
-      var source = new EventSource('/mxcube/api/v0.1/samplecentring/camera/stream');
+      var source = new EventSource('/mxcube/api/v0.1/samplecentring/camera/subscribe');
       source.addEventListener('update',this.eventHandlerUpdate);
       //this.streamSubscribe()
   		return {img: 'build/fakeimg.jpg',
@@ -164,7 +164,8 @@ var Sample = React.createClass({
     this.setState({zoomText: currZoom})
     $.ajax({
           url: '/mxcube/api/v0.1/samplecentring/zoom/move',
-          data: {'moveable': 'Zoom', 'position': currZoom},
+          data: JSON.stringify({'moveable': 'Zoom', 'position': currZoom}, null, '\t'),
+          contentType: 'application/json;charset=UTF-8',
         type: 'PUT',
           success: function(res) {
               console.log(res);

@@ -3,7 +3,7 @@ from .. import socketio
 from HardwareRepository import HardwareRepository
 main = Blueprint('main', __name__,static_folder='static')
 
-import routes, events, src.RestParser, os 
+import routes, src.RestParser, os
 hwr_directory = os.environ["XML_FILES_PATH"]
 main.hwr = HardwareRepository.HardwareRepository(os.path.abspath(hwr_directory))
 main.hwr.connect()

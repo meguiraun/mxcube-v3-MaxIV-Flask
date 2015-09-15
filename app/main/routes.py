@@ -3,33 +3,6 @@ from . import main as mxcube
 # from . import mockups#samplecentring, sample, beamline, collection
 
 import logging
-# @main.route('/', methods=['GET', 'POST'])
-# def index():
-#     """"Login form to enter a room."""
-#     form = LoginForm()
-#     if form.validate_on_submit():
-#         session['name'] = form.name.data
-#         session['room'] = form.room.data
-#         return redirect(url_for('.chat'))
-#     elif request.method == 'GET':
-#         form.name.data = session.get('name', '')
-#         form.room.data = session.get('room', '')
-#     return render_template('index.html', form=form)
-
-
-# @main.route('/chat')
-# def chat():
-#     """Chat room. The user's name and room must be stored in
-#     the session."""
-#     name = session.get('name', '')
-#     room = session.get('room', '')
-#     if name == '' or room == '':
-#         return redirect(url_for('.index'))
-#     return render_template('chat.html', name=name, room=room)
-
-# @mxcube.errorhandler(404)
-# def error404(error):
-#     return 'Nothing to see here, move on'
 
 @mxcube.route("/")
 def serve_static_file():
@@ -49,7 +22,6 @@ def mockup_ready():
     logging.getLogger('HWR').info('[Routes] Called mockup ready')
     print "mockup ready called  "
     #data = dict(request.POST.items())
-    #return sampleCentring.move(data)
     return str(mxcube.mockups.isReady())
 @mxcube.route("/mxcube/api/v0.1/mockups/newres/<int:newres>", methods=['PUT'])
 def mockup_newres():
@@ -60,6 +32,7 @@ def mockup_newres():
     return mxcube.mockups.setResolution(newres)
 
 ###----SSE SAMPLE VIDEO STREAMING----###
+keep_streaming = True
 def sse_pack(d):
     """Pack data in SSE format"""
     buffer = ''
@@ -69,23 +42,16 @@ def sse_pack(d):
     return buffer + '\n'
 msg = {
     'retry': '1000'
-    }  
+    }
 msg['event'] = 'message'
 
-#@mxcube.route('/mxcube/api/v0.1/samplecentring/camera/stream', methods=['GET'])
 def stream_video():
     """it just send a message to the client so it knows that there is a new image. A HO is supplying that image"""
-    response.content_type = 'multipart/x-mixed-replace; boundary="!>"'
-    response.content_type ="text/event-stream"
-    response.cache_control = 'no-cache'
-    response.headers['content-type'] ='text/event-stream'
-    response.headers['Access-Control-Allow-Origin'] = '*'
-    response.headers['CharacterEncoding'] = "utf-8"
     event_id = 0
-    print "going to stream video"
-    while True:
+    logging.getLogger('HWR').info('[Stream] Camera video streaming started')
+    while keep_streaming:
         mxcube.sampleCentring.video.new_frame.wait()
-        im = mxcube.sampleCentring.video.new_frame.get()    
+        im = mxcube.sampleCentring.video.new_frame.get()
         msg.update({
          'event': 'update',
          'data' : im,
@@ -97,9 +63,24 @@ def stream_video():
         #gevent.sleep(0.08)
         gevent.sleep(0.1)
 
-@mxcube.route('/mxcube/api/v0.1/samplecentring/camera/stream', methods=['GET'])
-def stream(): 
-	return Response(stream_video(), mimetype="text/event-stream")
+@mxcube.route("/mxcube/api/v0.1/samplecentring/camera/subscribe", methods=['GET'])
+def subscribeToCamera():
+    """SampleCentring: subscribe to the streaming
+    data = {generic_data} #or nothing?
+    return_data={"url": url}
+    """
+    #data = dict(request.POST.items())
+    logging.getLogger('HWR').info('[Stream] Camera video streaming going to start')
+    return Response(stream_video(), mimetype="text/event-stream")
+
+@mxcube.route("/mxcube/api/v0.1/samplecentring/camera/unsubscribe", methods=['GET'])
+def unsubscribeToCamera():
+    """SampleCentring: subscribe from the streaming
+    data = {generic_data} #or nothing?
+    return_data={"result": True/False}
+    """
+    keep_streaming = False
+    return True
 
 ###----SAMPLE CENTRING----###
 @mxcube.route("/mxcube/api/v0.1/samplecentring/<id>/move", methods=['PUT'])
@@ -109,8 +90,7 @@ def moveSampleCentringMotor(id):
     data = {generic_data, "moveable": id, "position": pos}
     return_data={"result": True/False}
     """
-    print "move called  ", id
-    data = dict(request.POST.items())
+    data = json.loads(request.data)
     return mxcube.sampleCentring.move(data)
 
 @mxcube.route("/mxcube/api/v0.1/samplecentring/status", methods=['GET'])
@@ -135,27 +115,27 @@ def get_status_of_id(id):
     data = dict(request.POST.items())
     return mxcube.sampleCentring.getStatus(data)
 
-@mxcube.route("/mxcube/api/v0.1/samplecentring/camera/subscribe", methods=['GET'])
-def subscribeToCamera():
-    """SampleCentring: subscribe to the streaming
-    data = {generic_data} #or nothing?
-    return_data={"url": url}
-    """
-    data = dict(request.POST.items())
-    print "In sample camera"
-    print data
-    return {'url':'/mxcube/api/v0.1/samplecentring/camera/stream'}
-    print "subscribing done"
-@mxcube.route("/mxcube/api/v0.1/samplecentring/camera/unsubscribe", methods=['GET'])
-def unsubscribeToCamera():
-    """SampleCentring: subscribe from the streaming
-    data = {generic_data} #or nothing?
-    return_data={"result": True/False}
-    """
-    print "In sample camera unsubscribe"
-    data = dict(request.POST.items())
-    print "unsubscribing done"
-    return True
+# @mxcube.route("/mxcube/api/v0.1/samplecentring/camera/subscribe", methods=['GET'])
+# def subscribeToCamera():
+#     """SampleCentring: subscribe to the streaming
+#     data = {generic_data} #or nothing?
+#     return_data={"url": url}
+#     """
+#     data = dict(request.POST.items())
+#     print "In sample camera"
+#     print data
+#     return {'url':'/mxcube/api/v0.1/samplecentring/camera/stream'}
+#     print "subscribing done"
+# @mxcube.route("/mxcube/api/v0.1/samplecentring/camera/unsubscribe", methods=['GET'])
+# def unsubscribeToCamera():
+#     """SampleCentring: subscribe from the streaming
+#     data = {generic_data} #or nothing?
+#     return_data={"result": True/False}
+#     """
+#     print "In sample camera unsubscribe"
+#     data = dict(request.POST.items())
+#     print "unsubscribing done"
+#     return True
 
 @mxcube.route("/mxcube/api/v0.1/samplecentring/centring/<id>", methods=['GET'])
 def get_centring_of_id(id):
@@ -221,7 +201,7 @@ def get_sample(id):
     data = dict(request.POST.items())
     return samples.getSample(data)
 
-@mxcube.route("/mxcube/api/v0.1/samples/<id>", methods='DELETE')
+@mxcube.route("/mxcube/api/v0.1/samples/<id>", methods=['DELETE'])
 def delete_sample(id):
     """Delete the sample with id:"id"
     data = {generic_data, "SampleId":id}
@@ -239,7 +219,7 @@ def get_sample_list():
     data = dict(request.POST.items())
     return samples.getSampleList()
 
-@mxcube.route("/mxcube/api/v0.1/samples/<id>/mode", methods='POST')
+@mxcube.route("/mxcube/api/v0.1/samples/<id>/mode", methods=['POST'])
 def set_sample_mode(id):
     """Set sample changer mode: sample changer, manually mounted, ... (maybe it is enoug to set for all the same mode)
     data = {generic_data, "Mode": mode}
@@ -277,7 +257,7 @@ def umount_sample():
     return samples.umountSample(data)
 
 ###----COLLECTION----###
-@mxcube.route("/mxcube/api/v0.1/samples/<id>/collections/<colid>/mode", methods='POST')
+@mxcube.route("/mxcube/api/v0.1/samples/<id>/collections/<colid>/mode", methods=['POST'])
 def set_collection_method(method):
     """Define the collection method, standard collection, helical, mesh
     data={generic_data, "Method":method}
@@ -306,7 +286,7 @@ def update_collection(method):
     data = dict(request.POST.items())
     return mxcube.collection.updateCollection(data)
 
-@mxcube.route("/mxcube/api/v0.1/samples/<id>/collections/<colid>", methods='POST')
+@mxcube.route("/mxcube/api/v0.1/samples/<id>/collections/<colid>", methods=['POST'])
 def add_collection(id, colid):
     """Add a collection into the sample queue ***asociate to a sample!
     data={generic_data, "Method":method, "SampleId": sampleid ,"CollectionId": id, parameters}, 
@@ -360,7 +340,7 @@ def get_collection_list(id):
           }, 
     """
     data = dict(request.POST.items())
-@mxcube.route("/mxcube/api/v0.1/samples/<id>/collections/<colid>", methods='DELETE')
+@mxcube.route("/mxcube/api/v0.1/samples/<id>/collections/<colid>", methods=['DELETE'])
 def delete_collection(id):
     """delete the collection with id:"id"
     data={generic_data, "CollectionId": id},   
@@ -387,7 +367,7 @@ def get_collection_id_status(id):
     data = dict(request.POST.items())
     return mxcube.collection.getCollectionStatus(data)
 
-@mxcube.route("/mxcube/api/v0.1/samples/<sampleid>/collections/<colid>/run", methods='POST')
+@mxcube.route("/mxcube/api/v0.1/samples/<sampleid>/collections/<colid>/run", methods=['POST'])
 def run_collection(**args):
     """run the collection with id:"colid"
     data={generic_data},
